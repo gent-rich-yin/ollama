@@ -22,6 +22,8 @@ var LibOllamaPath string = func() string {
 	if eval, err := filepath.EvalSymlinks(exe); err == nil {
 		exe = eval
 	}
+	// if we run with "go run . serve", exe = /tmp/go-build<random>/exe/ollama 
+	// if we run "./ollama serve", exe = /home/user/ollama/ollama
 
 	var libPath string
 	switch runtime.GOOS {
@@ -32,6 +34,9 @@ var LibOllamaPath string = func() string {
 	case "darwin":
 		libPath = filepath.Dir(exe)
 	}
+	// On Linux
+	// if we run with "go run . serve", libPath = /tmp/go-build<random>/lib/ollama
+	// if we run "./ollama serve", libPath = /home/user/lib/ollama
 
 	cwd, err := os.Getwd()
 	if err != nil {

@@ -52,26 +52,34 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		if eval, err := filepath.EvalSymlinks(exe); err == nil {
 			exe = eval
 		}
+
+		// ml.LibOllamaPath is /home/user/ollama/build/lib/ollama (run build or not)
+		// Glob is searching /home/user/ollama/build/lib/ollama/*/*ggml-*, nothing matches. Why * in between?
 		files, err := filepath.Glob(filepath.Join(ml.LibOllamaPath, "*", "*ggml-*"))
 		if err != nil {
 			slog.Debug("unable to lookup runner library directories", "error", err)
 		}
+		// if we run with "go run . serve", exe = /tmp/go-build<random>/exe/ollama and files is empty slice
+		// if we run "./ollama serve", exe = /home/user/ollama/ollama and files is empty slice
+		slog.Info("", "ml.LibOllamaPath", ml.LibOllamaPath, "exe", exe, "files", files)  
 		for _, file := range files {
 			libDirs[filepath.Dir(file)] = struct{}{}
 		}
 
+		// len(libDirs) == 0 is true
 		if len(libDirs) == 0 {
 			libDirs[""] = struct{}{}
 		}
+		// Now len(libDirs) is 1
 
 		slog.Info("discovering available GPUs...")
-		detectIncompatibleLibraries()
+		detectIncompatibleLibraries()  // Noop
 
 		// Warn if any user-overrides are set which could lead to incorrect GPU discovery
 		overrideWarnings()
 
-		requested := envconfig.LLMLibrary()
-		jetpack := cudaJetpack()
+		requested := envconfig.LLMLibrary()  // request = ""
+		jetpack := cudaJetpack()  // jetpack = ""
 
 		// For our initial discovery pass, we gather all the known GPUs through
 		// all the libraries that were detected. This pass may include GPUs that
@@ -79,6 +87,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 		// We run this in serial to avoid potentially initializing a GPU multiple
 		// times concurrently leading to memory contention
 		for dir := range libDirs {
+			slog.Info("Enter libDirs loop.", "dir", dir)
 			// Typically bootstrapping takes < 1s, but on some systems, with devices
 			// in low power/idle mode, initialization can take multiple seconds.  We
 			// set a longer timeout just for bootstrap discovery to reduce the chance
@@ -110,6 +119,7 @@ func GPUDevices(ctx context.Context, runners []ml.FilteredRunnerDiscovery) []ml.
 			} else {
 				dirs = []string{ml.LibOllamaPath}
 			}
+			// dirs = []string{"/home/user/ollama/build/lib/ollama"}
 
 			ctx1stPass, cancel := context.WithTimeout(ctx, bootstrapTimeout)
 			defer cancel()
@@ -428,10 +438,12 @@ func (r *bootstrapRunner) HasExited() bool {
 }
 
 func bootstrapDevices(ctx context.Context, ollamaLibDirs []string, extraEnvs map[string]string) []ml.DeviceInfo {
+	slog.Info("In bootstrapDevices")
 	var out io.Writer
 	if envconfig.LogLevel() == logutil.LevelTrace {
 		out = os.Stderr
 	}
+	// default LogLevel is LevelInfo, so out is nil
 	start := time.Now()
 	defer func() {
 		slog.Debug("bootstrap discovery took", "duration", time.Since(start), "OLLAMA_LIBRARY_PATH", ollamaLibDirs, "extra_envs", extraEnvs)
@@ -455,6 +467,7 @@ func bootstrapDevices(ctx context.Context, ollamaLibDirs []string, extraEnvs map
 	}()
 
 	defer cmd.Process.Kill()
+	slog.Info("Before calling GetDevicesFromRunner")
 	devices, err := ml.GetDevicesFromRunner(ctx, &bootstrapRunner{port: port, cmd: cmd})
 	if err != nil {
 		if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() >= 0 {

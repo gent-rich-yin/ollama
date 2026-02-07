@@ -189,7 +189,7 @@ func ParseNameFromFilepath(s string) (n Name) {
 	n.Namespace = parts[1]
 	n.Model = parts[2]
 	n.Tag = parts[3]
-	if !n.IsFullyQualified() {
+	if !n.IsFullyQualified() { // checks all 4 parts are populated and valid
 		return Name{}
 	}
 

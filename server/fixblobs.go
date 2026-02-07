@@ -13,7 +13,7 @@ func fixBlobs(dir string) error {
 		if err != nil {
 			return err
 		}
-		baseName := filepath.Base(path)
+		baseName := filepath.Base(path)  // return file name only (last element in path)
 		typ, sha, ok := strings.Cut(baseName, ":")
 		if ok && typ == "sha256" {
 			newPath := filepath.Join(filepath.Dir(path), typ+"-"+sha)

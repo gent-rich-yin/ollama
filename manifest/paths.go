@@ -14,6 +14,7 @@ import (
 
 var ErrInvalidDigestFormat = errors.New("invalid digest format")
 
+// make sure $HOME/.ollama/models/manifests is created
 func Path() (string, error) {
 	path := filepath.Join(envconfig.Models(), "manifests")
 	if err := os.MkdirAll(path, 0o755); err != nil {
@@ -37,6 +38,9 @@ func PathForName(n model.Name) (string, error) {
 	return filepath.Join(manifests, n.Filepath()), nil
 }
 
+// BlobsPath ensures $HOME/.ollama/models/blobs is created with 0x755 permisssion
+// and returns $HOME/.ollama/models/blobs if digest string is blank
+// or $HOME/.ollama/models/blobs/sha256-*
 func BlobsPath(digest string) (string, error) {
 	// only accept actual sha256 digests
 	pattern := "^sha256[:-][0-9a-fA-F]{64}$"
@@ -47,7 +51,7 @@ func BlobsPath(digest string) (string, error) {
 	}
 
 	digest = strings.ReplaceAll(digest, ":", "-")
-	path := filepath.Join(envconfig.Models(), "blobs", digest)
+	path := filepath.Join(envconfig.Models(), "blobs", digest)  // $HOME/.ollama/models/blobs
 	dirPath := filepath.Dir(path)
 	if digest == "" {
 		dirPath = path

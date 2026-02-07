@@ -173,12 +173,14 @@ func WriteManifest(name model.Name, config Layer, layers []Layer) error {
 }
 
 func Manifests(continueOnError bool) (map[model.Name]*Manifest, error) {
-	manifests, err := Path()
+	manifests, err := Path()   // make sure $HOME/.ollama/models/manifests created, manifests = $HOME/.ollama/models/manifests
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO(mxyng): use something less brittle
+	// Example entry in manifests: $HOME/.ollama/models/manifests/registry.ollama.ai/library/gemma3/latest
+	// which is in the format: { host } "/" { namespace } "/" { model } "/" { tag }
 	matches, err := filepath.Glob(filepath.Join(manifests, "*", "*", "*", "*"))
 	if err != nil {
 		return nil, err
@@ -192,7 +194,7 @@ func Manifests(continueOnError bool) (map[model.Name]*Manifest, error) {
 		}
 
 		if !fi.IsDir() {
-			rel, err := filepath.Rel(manifests, match)
+			rel, err := filepath.Rel(manifests, match)  // rel = registry.ollama.ai/library/gemma3/latest
 			if err != nil {
 				if !continueOnError {
 					return nil, fmt.Errorf("%s %w", match, err)

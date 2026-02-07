@@ -1626,11 +1626,12 @@ func (s *Server) GenerateRoutes(rc *ollama.Registry) (http.Handler, error) {
 	return r, nil
 }
 
+// Serve is called by cmd.RunServer
 func Serve(ln net.Listener) error {
-	slog.SetDefault(logutil.NewLogger(os.Stderr, envconfig.LogLevel()))
+	slog.SetDefault(logutil.NewLogger(os.Stderr, envconfig.LogLevel()))  // envconfig.LogLevel() is slog.LevelInfo
 	slog.Info("server config", "env", envconfig.Values())
 
-	blobsDir, err := manifest.BlobsPath("")
+	blobsDir, err := manifest.BlobsPath("")  // make sure $HOME/.ollama/models/blobs is created, defined in manifest/paths.go
 	if err != nil {
 		return err
 	}
@@ -1638,8 +1639,8 @@ func Serve(ln net.Listener) error {
 		return err
 	}
 
-	if !envconfig.NoPrune() {
-		if _, err := manifest.Manifests(false); err != nil {
+	if !envconfig.NoPrune() {  // !false => true
+		if _, err := manifest.Manifests(false); err != nil {  // load all manifests files and make sure they are all valid
 			slog.Warn("corrupt manifests detected, skipping prune operation.  Re-pull or delete to clear", "error", err)
 		} else {
 			// clean up unused layers and manifests
