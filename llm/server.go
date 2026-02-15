@@ -124,6 +124,7 @@ type ollamaServer struct {
 // maxArraySize. If maxArraySize is 0, the default value of 1024 is used. If
 // the maxArraySize is negative, all arrays are collected.
 func LoadModel(model string, maxArraySize int) (*ggml.GGML, error) {
+	slog.Info("Loading model", "model", model, "maxArraySize", maxArraySize)
 	if _, err := os.Stat(model); err != nil {
 		return nil, err
 	}
