@@ -2226,6 +2226,7 @@ func (s *Server) ChatHandler(c *gin.Context) {
 
 			// sets up new context given parent context per request
 			ctx, cancel := context.WithCancel(c.Request.Context())
+			slog.Info("Before calling r.Completion.", "prompt", prompt)
 			err := r.Completion(ctx, llm.CompletionRequest{
 				Prompt:      prompt,
 				Images:      images,
