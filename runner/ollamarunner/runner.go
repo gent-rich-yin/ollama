@@ -1302,6 +1302,7 @@ func (s *Server) load(w http.ResponseWriter, r *http.Request) {
 			GPULayers:      req.GPULayers,
 			FlashAttention: req.FlashAttention,
 		}
+		slog.Info("Richard: before calling s.allocModel", "params.AllocMemory", params.AllocMemory, "params.NumThreads", params.NumThreads, "params.GPULayers", params.GPULayers, "params.FlashAttention", params.FlashAttention)
 
 		s.batchSize = req.BatchSize
 
