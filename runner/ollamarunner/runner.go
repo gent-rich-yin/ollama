@@ -129,6 +129,7 @@ type NewSequenceParams struct {
 var errorInputTooLong = errors.New("the input length exceeds the context length")
 
 func (s *Server) NewSequence(prompt string, images []llm.ImageData, params NewSequenceParams) (*Sequence, error) {
+	slog.Info("Richard: NewSequence called", "prompt", prompt, "images", len(images), "params", params)
 	s.ready.Wait()
 
 	inputs, ctxs, mmStore, err := s.inputs(prompt, images)
@@ -849,6 +850,7 @@ func (s *Server) computeBatch(activeBatch batchState) {
 }
 
 func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Richard: ollamarunner completion called")
 	var req llm.CompletionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -953,6 +955,7 @@ func (s *Server) completion(w http.ResponseWriter, r *http.Request) {
 			return
 		case resp, ok := <-seq.responses:
 			if ok {
+				slog.Info("Richard: received ", "resp.content", resp.content)
 				if err := json.NewEncoder(w).Encode(&llm.CompletionResponse{
 					Content:  resp.content,
 					Logprobs: resp.logprobs,

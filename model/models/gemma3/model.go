@@ -3,6 +3,7 @@ package gemma3
 import (
 	"bytes"
 	"image"
+	"log/slog"
 	"math"
 	"slices"
 
@@ -152,6 +153,7 @@ func (m *Model) PostTokenize(inputs []*input.Input) ([]*input.Input, error) {
 }
 
 func (m *Model) Forward(ctx ml.Context, batch input.Batch) (ml.Tensor, error) {
+	slog.Info("Richard: gemma3 Forward called")
 	hiddenState := m.TextModel.Forward(ctx, batch, m.Cache)
 	hiddenState = m.Output.Forward(ctx, hiddenState)
 

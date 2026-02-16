@@ -1557,9 +1557,14 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 	}
 
 	if req.Options == nil {
+		slog.Info("Richard: Using default options") // not called, so req.Options is not nil
 		opts := api.DefaultOptions()
 		req.Options = &opts
 	}
+
+	slog.Info("Richard: ", "req.Options", req.Options, "req.Grammar", req.Grammar)  
+	// req.Options="&{Runner:{NumCtx:4096 NumBatch:512 NumGPU:-1 MainGPU:0 UseMMap:<nil> NumThread:0} NumKeep:4 Seed:-1 NumPredict:-1 TopK:64 TopP:0.95 MinP:0 TypicalP:1 RepeatLastN:64 Temperature:1 RepeatPenalty:1.1 PresencePenalty:0 FrequencyPenalty:0 Stop:[<end_of_turn>]}"
+	// req.Grammar = ""
 
 	if err := s.sem.Acquire(ctx, 1); err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -1594,6 +1599,8 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 	}
 
 	endpoint := fmt.Sprintf("http://127.0.0.1:%d/completion", s.port)
+	slog.Info("Before calling llama server", "endpoint", endpoint)
+
 	serverReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, buffer)
 	if err != nil {
 		return fmt.Errorf("error creating POST request: %v", err)

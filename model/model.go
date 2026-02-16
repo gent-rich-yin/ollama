@@ -336,6 +336,7 @@ func Forward(ctx ml.Context, m Model, batch input.Batch) (ml.Tensor, error) {
 		}
 	}
 
+	slog.Info("Richard: before calling m.Forward")
 	t, err := m.Forward(ctx, batch)
 	if err != nil {
 		return nil, err
