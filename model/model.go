@@ -1,6 +1,10 @@
 package model
 
+import "C"
+
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	_ "image/jpeg"
@@ -319,6 +323,8 @@ func canNil(t reflect.Type) bool {
 		t.Kind() == reflect.Slice
 }
 
+var batch_id = 1
+
 func Forward(ctx ml.Context, m Model, batch input.Batch) (ml.Tensor, error) {
 	if len(batch.Positions) != len(batch.Sequences) {
 		return nil, fmt.Errorf("length of positions (%v) must match length of seqs (%v)", len(batch.Positions), len(batch.Sequences))
@@ -337,6 +343,14 @@ func Forward(ctx ml.Context, m Model, batch input.Batch) (ml.Tensor, error) {
 	}
 
 	slog.Info("Richard: before calling m.Forward")
+	batch_file := fmt.Sprintf("/tmp/batch_%d.bin", batch_id)
+	slog.Info("Richard: saving batch to", "batch_file", batch_file)
+	save_err :=	saveBatch(batch_file, batch)
+	if save_err != nil {
+		slog.Error("Failed to to save batch", "batch_file", batch_file, "error", save_err)
+	}
+	batch_id++
+
 	t, err := m.Forward(ctx, batch)
 	if err != nil {
 		return nil, err
@@ -345,4 +359,47 @@ func Forward(ctx ml.Context, m Model, batch input.Batch) (ml.Tensor, error) {
 	ctx.Forward(t)
 
 	return t, nil
+}
+
+func saveBatch(filename string, batch input.Batch) error {
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+	
+	slog.Info("batch", "len of input bytes", len(batch.Inputs.Bytes()), "len of output bytes", len(batch.Outputs.Bytes()), "len of positions", len(batch.Positions), "len of sequences", len(batch.Sequences))
+	input_bytes, _ := int64ToBytes(int64(len(batch.Inputs.Bytes())))
+	file.Write(input_bytes)
+	file.Write(batch.Inputs.Bytes())
+
+	output_bytes, _ := int64ToBytes(int64(len(batch.Outputs.Bytes())))
+	file.Write(output_bytes)
+	file.Write(batch.Outputs.Bytes())
+
+	position_len, _ := int64ToBytes(int64(len(batch.Positions)))
+	file.Write(position_len)
+	for _, p := range batch.Positions {
+		bytes, _ := int64ToBytes(int64(p))
+		file.Write(bytes)
+	}
+
+	sequence_len, _ := int64ToBytes(int64(len(batch.Sequences)))
+	file.Write(sequence_len)
+	for _, s := range batch.Sequences {
+		bytes, _ := int64ToBytes(int64(s))
+		file.Write(bytes)
+	}
+
+	return nil
+}
+
+func int64ToBytes(i int64) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	// You must decide on a specific byte order, e.g., BigEndian or LittleEndian
+	err := binary.Write(buf, binary.BigEndian, i)
+	if err != nil {
+		return nil, fmt.Errorf("error converting %d to binary: %w", i, err)
+	}
+	return buf.Bytes(), nil
 }
